@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Controle de Áudio e Luz</title>
+  <style>
+    button {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Administração de Áudios</h1>
+
+  <!-- Formulário para upload de áudio -->
+  <form id="uploadForm" enctype="multipart/form-data">
+    <label for="audioName">Nome do Áudio:</label>
+    <input type="text" id="audioName" name="audioName" required><br><br>
+
+    <label for="audioFile">Arquivo de Áudio:</label>
+    <input type="file" id="audioFile" name="audioFile" accept="audio/*" required><br><br>
+
+    <label for="intensity">Intensidade da Luz (Canal 1):</label>
+    <input type="range" id="intensity" name="intensity" min="0" max="255" value="0"><br>
+    <span id="intensityValue">0</span><br><br>
+
+    <label for="effect">Efeito (Canal 2):</label>
+    <input type="range" id="effect" name="effect" min="0" max="255" value="0"><br>
+    <span id="effectValue">0</span><br><br>
+
+    <label for="color">Cor (RGB):</label>
+    <input type="color" id="color" name="color" value="#000000"><br><br>
+
+    <button type="button" onclick="submitForm()">Enviar</button>
+  </form>
+
+  <!-- Lista de áudios cadastrados -->
+  <h2>Áudios Cadastrados</h2>
+  <ul id="audioList"></ul>
+
+  <script>
+    // Função para carregar e exibir a lista de áudios
+    async function loadAudios() {
+      try {
+        const response = await fetch('/audios');
+        if (!response.ok) throw new Error('Erro ao carregar áudios');
+        const audios = await response.json();
+        const list = document.getElementById('audioList');
+        list.innerHTML = '';
+        audios.forEach(audio => {
+          const li = document.createElement('li');
+          li.textContent = `Nome: ${audio.name}, Caminho: ${audio.path}, Intensidade: ${audio.intensity}, Efeito: ${audio.effect}, Cor: rgb(${audio.r}, ${audio.g}, ${audio.b})`;
+          
+          // Adiciona o botão de deletar
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = 'Deletar';
+          deleteButton.onclick = () => deleteAudio(audio.name);
+          
+          li.appendChild(deleteButton);
+          list.appendChild(li);
+        });
+      } catch (error) {
+        console.error('Erro ao carregar áudios:', error);
+      }
+    }
+
+    // Função para enviar o formulário de upload
+    async function submitForm() {
+      const formData = new FormData(document.getElementById('uploadForm'));
+
+      try {
+        const response = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) throw new Error('Erro ao enviar o formulário');
+        alert('Áudio enviado com sucesso!');
+        loadAudios(); // Atualiza a lista de áudios
+      } catch (error) {
+        console.error('Erro ao enviar o formulário:', error);
+        alert('Erro ao enviar o áudio');
+      }
+    }
+
+    // Função para deletar um áudio
+    async function deleteAudio(name) {
+      if (confirm('Você tem certeza de que deseja deletar este áudio?')) {
+        try {
+          const response = await fetch(`/delete/${encodeURIComponent(name)}`, {
+            method: 'DELETE'
+          });
+
+          if (!response.ok) throw new Error('Erro ao deletar o áudio');
+          alert('Áudio deletado com sucesso!');
+          loadAudios(); // Atualiza a lista de áudios
+        } catch (error) {
+          console.error('Erro ao deletar o áudio:', error);
+          alert('Erro ao deletar o áudio');
+        }
+      }
+    }
+
+    // Carrega a lista de áudios ao iniciar a página
+    window.onload = loadAudios;
+  </script>
+</body>
+</html>
